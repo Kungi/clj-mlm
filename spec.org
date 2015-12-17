@@ -1,0 +1,66 @@
+#+AUTHOR: Andreas Klein, Jonas Große-Sundrup
+#+TITLE: CLJ-MLM a Maildir based Mailinglist Manager
+
+* Constraints
+** Works with its private maildir
+** Uses an MDA for outbound mail
+
+* Maildir structure
+
+Suppose clj-mlm manages the following mailingslists in the maildir `/m`:
+- horst@blubber.de
+- gerda@ml.de
+
+Then the maildir contains the following files and directories:
+
+- /cur
+- /tmp
+- /new
+- /m/horst@blubber.de
+- /m/horst@blubber.de/cur
+- /m/horst@blubber.de/tmp
+- /m/horst@blubber.de/new
+- /m/horst@blubber.de/.config
+- /m/horst@blubber.de/.subscribers
+- /m/gerda@ml.de
+- /m/gerda@ml.de/cur
+- /m/gerda@ml.de/tmp
+- /m/gerda@ml.de/new
+- /m/gerda@ml.de/.config
+- /m/gerda@ml.de/.subscribers
+
+The system supports hot config reloading, such that when a .config or
+.subscribers files is changed the mlms state gets updated on the fly.
+
+The whole system depends on inotify for each function.
+
+* Async
+
+* Funktions / Events
+
+** new mailinglist
+   - A new folder is created in our maildir `/m`
+     Then the java WatchService sends an ENTRY_CREATE event.
+   - We parse this event and create new mailinglist workers.
+
+** remove mailinglist
+   - A folder is removed in our maildir `/m`
+     Then the java WatchService sends an ENTRY_DELETE event.
+   - We parse this event and stop the mailinglist workers.
+
+** subscribe (without public subscription)
+   - An entry is added to the .subscribers file in a mailinglist folder.
+     Then the java WatchService sends an ENTRY_MODIFY event.
+   - We parse this event and reload the subscribers file from disk into
+     the internal state.
+
+** unsubscribe (without public subscription)
+   - Exactly the same as subscribe.
+
+** send
+Suppose a mail is sent to all subscribers of the list gerda@ml.de.
+
+   - A new mail is created in in `/m/new`.
+   - We move the mail to `/m/tmp` to indicate that we are working on it.
+   - We send the mail to all subscribers.
+   - We move the mail from `/m/tmp` to `/m/gerda@ml.de/cur`
