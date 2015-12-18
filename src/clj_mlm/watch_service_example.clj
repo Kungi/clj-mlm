@@ -20,7 +20,7 @@
     :modify (file-modified file)
     :create (file-created file)
     :delete (file-deleted file)
-    (throw Exception (str "No valid action in event " e))))
+    (throw (Exception. (str "No valid action in event " e)))))
 
 (defn add-watcher [f path]
   (swap! watcher assoc path (watch-dir f (clojure.java.io/file path))))
